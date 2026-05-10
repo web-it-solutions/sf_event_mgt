@@ -15,40 +15,22 @@ use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 
 class BeUserSessionService
 {
-    private const SESSION_KEY = 'sf_event_mgt';
+    private const SESSION_KEY_PREFIX = 'sf_event_mgt-';
 
     /**
      * Saves the given data to the session
      */
-    public function saveSessionData(array $data): void
+    public function saveSessionData(string $key, mixed $data): void
     {
-        $this->getBackendUser()->setAndSaveSessionData(self::SESSION_KEY, $data);
+        $this->getBackendUser()->setAndSaveSessionData(self::SESSION_KEY_PREFIX . $key, $data);
     }
 
     /**
      * Returns the session data
-     *
-     * @return mixed
      */
-    public function getSessionData()
+    public function getSessionData(string $key): mixed
     {
-        return $this->getBackendUser()->getSessionData(self::SESSION_KEY);
-    }
-
-    /**
-     * Returns a specific value from the session data by the given key
-     *
-     * @return mixed|null
-     */
-    public function getSessionDataByKey(string $key)
-    {
-        $result = null;
-        $data = $this->getSessionData();
-        if (is_array($data) && isset($data[$key])) {
-            $result = $data[$key];
-        }
-
-        return $result;
+        return $this->getBackendUser()->getSessionData(self::SESSION_KEY_PREFIX . $key);
     }
 
     protected function getBackendUser(): ?BackendUserAuthentication

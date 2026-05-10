@@ -27,6 +27,7 @@ use DERHANSEN\SfEventMgt\Service\NotificationService;
 use DERHANSEN\SfEventMgt\Service\SettingsService;
 use DERHANSEN\SfEventMgt\Utility\PageUtility;
 use Psr\Http\Message\ResponseInterface;
+use TYPO3\CMS\Backend\Exception\AccessDeniedException;
 use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Backend\Template\Components\ButtonBar;
 use TYPO3\CMS\Backend\Template\Components\ComponentFactory;
@@ -34,12 +35,14 @@ use TYPO3\CMS\Backend\Template\ModuleTemplate;
 use TYPO3\CMS\Backend\Template\ModuleTemplateFactory;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
+use TYPO3\CMS\Core\Context\LanguageAspect;
 use TYPO3\CMS\Core\Domain\DateTimeFormat;
 use TYPO3\CMS\Core\Domain\Repository\PageRepository;
 use TYPO3\CMS\Core\Imaging\IconFactory;
 use TYPO3\CMS\Core\Imaging\IconSize;
 use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Page\PageRenderer;
+use TYPO3\CMS\Core\Site\Entity\Site;
 use TYPO3\CMS\Core\Type\ContextualFeedbackSeverity;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Extbase\Property\TypeConverter\DateTimeConverter;
@@ -177,6 +180,8 @@ class AdministrationController extends AbstractController
             $moduleTemplate->getDocHeaderComponent()->setPageBreadcrumb($pageRecord);
         }
 
+        $this->createLanguageSelector($moduleTemplate);
+
         $initAdministrationModuleTemplateEvent = new InitAdministrationModuleTemplateEvent(
             $moduleTemplate,
             $this->uriBuilder,
@@ -189,6 +194,51 @@ class AdministrationController extends AbstractController
         $moduleTemplate->assignMultiple($variables);
 
         return $moduleTemplate->renderResponse($templateFileName);
+    }
+
+    /**
+     * Creates the language selector dropdown in the module toolbar if required.
+     */
+    protected function createLanguageSelector(ModuleTemplate $view): void
+    {
+        /** @var Site $site */
+        $site = $this->request->getAttribute('site');
+        $languages = [];
+
+        foreach ($site->getLanguages() as $siteLanguage) {
+            if (!$siteLanguage->enabled() ||
+                !$this->getBackendUser()->check('allowed_languages', $siteLanguage->getLanguageId())
+            ) {
+                continue;
+            }
+
+            $languages[] = $siteLanguage;
+        }
+
+        if (count($languages) <= 1) {
+            return;
+        }
+
+        $selectorLabel = $this->getLanguageService()->sL('LLL:EXT:core/Resources/Private/Language/locallang_core.xlf:labels.languages');
+        $languageDropDownButton = $this->componentFactory->createDropDownButton()
+            ->setLabel($selectorLabel)
+            ->setShowActiveLabelText(true)
+            ->setShowLabelText(true);
+
+        foreach ($languages as $language) {
+            $uri = $this->uriBuilder->reset()->setRequest($this->request)
+                ->uriFor('list', ['lang' => $language->getLanguageId()], 'Administration');
+
+            $currentLanguage = $this->getCurrentLanguage();
+            $item = $this->componentFactory->createDropDownRadio()
+                ->setActive($currentLanguage === $language->getLanguageId())
+                ->setHref($uri)
+                ->setIcon($this->iconFactory->getIcon($language->getFlagIdentifier()))
+                ->setLabel($language->getTitle());
+            $languageDropDownButton->addItem($item);
+        }
+
+        $view->getDocHeaderComponent()->setLanguageSelector($languageDropDownButton);
     }
 
     public function initializeAction(): void
@@ -230,25 +280,19 @@ class AdministrationController extends AbstractController
         if ($searchDemand !== null) {
             $searchDemand->setFields($this->settings['search']['fields'] ?? 'title');
 
-            $sessionData = [];
-            $sessionData['searchDemand'] = $searchDemand->toArray();
-            $sessionData['overwriteDemand'] = $overwriteDemand;
-            $this->beUserSessionService->saveSessionData($sessionData);
+            $this->beUserSessionService->saveSessionData('searchDemand', $searchDemand->toArray());
+            $this->beUserSessionService->saveSessionData('overwriteDemand', $overwriteDemand);
         } else {
             // Try to restore search demand from Session
-            $sessionSearchDemand = $this->beUserSessionService->getSessionDataByKey('searchDemand') ?? [];
+            $sessionSearchDemand = $this->beUserSessionService->getSessionData('searchDemand') ?? [];
             $searchDemand = SearchDemand::fromArray($sessionSearchDemand);
-            $overwriteDemand = $this->beUserSessionService->getSessionDataByKey('overwriteDemand');
+            $overwriteDemand = $this->beUserSessionService->getSessionData('overwriteDemand') ?? [];
         }
 
         if ($this->isResetFilter()) {
             $searchDemand = GeneralUtility::makeInstance(SearchDemand::class);
-            $overwriteDemand = [];
-
-            $sessionData = [];
-            $sessionData['searchDemand'] = $searchDemand->toArray();
-            $sessionData['overwriteDemand'] = $overwriteDemand;
-            $this->beUserSessionService->saveSessionData($sessionData);
+            $this->beUserSessionService->saveSessionData('searchDemand', $searchDemand->toArray());
+            $this->beUserSessionService->saveSessionData('overwriteDemand', []);
         }
 
         // Initialize default ordering when no overwriteDemand is available
@@ -272,6 +316,7 @@ class AdministrationController extends AbstractController
             $eventDemand->setIgnoreEnableFields(true);
             $eventDemand->setStoragePage($pageUids);
 
+            $this->setRepositoryLanguage();
             $events = $this->eventRepository->findDemanded($eventDemand);
             $pagination = $this->getPagination($events, $this->settings['pagination'] ?? []);
         }
@@ -535,6 +580,37 @@ class AdministrationController extends AbstractController
             'startdate' => $this->getLanguageService()->translate('administration.orderBy.startdate', 'sf_event_mgt.be') ?? '',
             'enddate' => $this->getLanguageService()->translate('administration.orderBy.enddate', 'sf_event_mgt.be') ?? '',
         ];
+    }
+
+    protected function setRepositoryLanguage(): void
+    {
+        $language = $this->getCurrentLanguage();
+        if ($language === 0) {
+            return;
+        }
+
+        $languageAspect = new LanguageAspect($language);
+        $querySettings = $this->eventRepository->createQuery()->getQuerySettings();
+        $querySettings->setLanguageAspect($languageAspect);
+        $querySettings->setRespectSysLanguage(true);
+        $this->eventRepository->setDefaultQuerySettings($querySettings);
+    }
+
+    protected function getCurrentLanguage(): int
+    {
+        $language = $this->beUserSessionService->getSessionData('language');
+        $languageFromQueryParam = $this->request->getQueryParams()['lang'] ?? null;
+
+        if (($language !== null && $languageFromQueryParam === null) || $language === $languageFromQueryParam) {
+            return (int)$language;
+        }
+
+        if (!$this->getBackendUser()->check('allowed_languages', $languageFromQueryParam)) {
+            throw new AccessDeniedException('User does not have permission to access language');
+        }
+
+        $this->beUserSessionService->saveSessionData('language', (string)$languageFromQueryParam);
+        return (int)$languageFromQueryParam;
     }
 
     protected function getLanguageService(): LanguageService
