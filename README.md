@@ -50,6 +50,7 @@ Event management and registration is an extension for TYPO3 CMS to manage events
 * Console command to delete registrations of expired registrations
 * Automatic cache invalidation when an event has been changed in the backend
 * Automatic page cache lifetime calculation based on several event properties
+* Helper utility class to handle ISO 4217 currency codes
 * A lot of PSR-14 Events to extend the extension with own functionality
 
 **Background**
