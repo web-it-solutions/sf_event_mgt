@@ -12,6 +12,15 @@
 Breaking Changes
 ================
 
+9.0.0
+~~~~~
+This version contains several breaking changes. The most relevant changes are:
+
+* Use .fluid. file extension for all templates
+* MetaTagViewHelper, HeaderData and TitleViewHelper have been removed
+* Remove default value in OnlineCalendarViewHelper
+* Use Constructor Property Promotion in all controllers
+
 8.5.0
 ~~~~~
 
@@ -25,7 +34,7 @@ before updating to version 8.x.
 
 Additionally, the database type for price fields has changed. Make sure to apply database
 changes. Note, that due to field change from "double" to "numeric", rounding errors may
-accur in very rare scenarios, where the price contains many digits after the comma.
+occur in very rare scenarios, where the price contains many digits after the comma.
 This change is however optional, but it is recommended to apply it.
 
 8.0.0

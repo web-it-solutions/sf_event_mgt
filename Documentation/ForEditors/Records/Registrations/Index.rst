@@ -28,7 +28,7 @@ Default fields in the registration form are:
 * City
 * Country
 * Phone
-* E-Mail
+* Email
 * Date of birth
 * Notes
 * Accept terms and conditions

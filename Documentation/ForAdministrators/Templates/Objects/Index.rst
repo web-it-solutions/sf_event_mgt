@@ -363,7 +363,7 @@ The following objects can be used in notification views
    :Description:
          Appended HMAC for the registration UID
 
-E-Mail subjects
+Email subjects
 ~~~~~~~~~~~~~~~
 
 The following objects can be used in email subjects for event registration and custom notifications

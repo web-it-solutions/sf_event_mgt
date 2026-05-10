@@ -29,7 +29,7 @@ path::
 
   Templates/Notification/User/Custom/
 
-In this example, I create the file **MyNotification.html**
+In this example, I create the file **MyNotification.fluid.html**
 
 You can use the following objects in your template:
 
@@ -49,7 +49,7 @@ in the TypoScript settings of the **admin module**.::
         customNotifications {
           myNotification {
             title = A title for the notification
-            template = MyNotification.html
+            template = MyNotification.fluid.html
             subject = A subject for the email
           }
         }
@@ -72,7 +72,7 @@ actually have paid for the event), you can use the "constraints" setting to limi
         customNotifications {
           myNotification {
             title = A title for the notification
-            template = MyNotification.html
+            template = MyNotification.fluid.html
             subject = A subject for the email
             constraints {
               paid.equals = 1
@@ -101,7 +101,7 @@ You may also combine the conditions like shown below:::
         customNotifications {
           myNotification {
             title = A title for the notification
-            template = MyNotification.html
+            template = MyNotification.fluid.html
             subject = A subject for the email
             constraints {
               paid.equals = 1

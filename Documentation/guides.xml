@@ -12,7 +12,7 @@
                interlink-shortcode="derhansen/sf_event_mgt"
     />
     <project title="Event management and registration"
-             release="8.0.0"
-             version="8.0"
-             copyright="2014 - 2024 by Torben Hansen"/>
+             release="9.0.0"
+             version="9.0"
+             copyright="2014 - 2026 by Torben Hansen"/>
 </guides>

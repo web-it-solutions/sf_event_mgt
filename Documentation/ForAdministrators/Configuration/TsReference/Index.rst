@@ -664,7 +664,7 @@ settings.event.errorHandling
 .. confval:: settings.event.errorHandling
 
    :Type: string
-   :Default: showStandaloneTemplate,EXT:sf_event_mgt/Resources/Private/Templates/Event/EventNotFound.html,404
+   :Default: showStandaloneTemplate,EXT:sf_event_mgt/Resources/Private/Templates/Event/EventNotFound.fluid.html,404
 
    If an event for the detail and registration view is not found (e.g. is hidden or deleted), you can configure,
    if the plugin should redirect to the list view, show a 404 error or render the view (default) without the
@@ -678,7 +678,7 @@ settings.event.errorHandling
 
    The "showStandaloneTemplate" option requires a Template and optional an HTTP status code.
 
-   Example: showStandaloneTemplate,EXT:sf_event_mgt/Resources/Private/Templates/Event/EventNotFound.html,404
+   Example: showStandaloneTemplate,EXT:sf_event_mgt/Resources/Private/Templates/Event/EventNotFound.fluid.html,404
 
    **Note:** For TYPO3 9.5, this setting has only effect when the event is not passed through GET parameters to the
    action (e.g. event set in plugin). For all other scenarios, the TYPO3 "sites" error handling steps in.

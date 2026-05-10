@@ -439,8 +439,8 @@ Notification Configuration
    :Scope: Plugin, TypoScript Setup
    :Plugin: Registration
 
-   E-Mail address(es) of website admin(s) who receive new/confirmed registrations.
-   Multiple E-Mail addresses must be separated with a comma.
+   Email address(es) of website admin(s) who receive new/confirmed registrations.
+   Multiple Email addresses must be separated with a comma.
 
 
 .. confval:: notification.registrationNew.userSubject
