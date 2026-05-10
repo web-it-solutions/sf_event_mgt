@@ -16,12 +16,14 @@ use DERHANSEN\SfEventMgt\Domain\Model\Dto\EventDemand;
 use DERHANSEN\SfEventMgt\Domain\Model\Dto\SearchDemand;
 use DERHANSEN\SfEventMgt\Domain\Model\Event;
 use DERHANSEN\SfEventMgt\Domain\Repository\CustomNotificationLogRepository;
+use DERHANSEN\SfEventMgt\Domain\Repository\EventRepository;
 use DERHANSEN\SfEventMgt\Event\InitAdministrationModuleTemplateEvent;
 use DERHANSEN\SfEventMgt\Event\ModifyAdministrationIndexNotifyViewVariablesEvent;
 use DERHANSEN\SfEventMgt\Event\ModifyAdministrationListViewVariablesEvent;
 use DERHANSEN\SfEventMgt\Service\BeUserSessionService;
 use DERHANSEN\SfEventMgt\Service\ExportService;
 use DERHANSEN\SfEventMgt\Service\MaintenanceService;
+use DERHANSEN\SfEventMgt\Service\NotificationService;
 use DERHANSEN\SfEventMgt\Service\SettingsService;
 use DERHANSEN\SfEventMgt\Utility\PageUtility;
 use Psr\Http\Message\ResponseInterface;
@@ -44,68 +46,22 @@ use TYPO3\CMS\Extbase\Property\TypeConverter\DateTimeConverter;
 
 class AdministrationController extends AbstractController
 {
-    protected ModuleTemplateFactory $moduleTemplateFactory;
-    protected CustomNotificationLogRepository $customNotificationLogRepository;
-    protected ExportService $exportService;
-    protected SettingsService $settingsService;
-    protected BeUserSessionService $beUserSessionService;
-    protected MaintenanceService $maintenanceService;
-    protected IconFactory $iconFactory;
-    protected PageRenderer $pageRenderer;
-    protected ComponentFactory $componentFactory;
-    protected PageRepository $pageRepository;
     protected int $pid = 0;
 
-    public function injectCustomNotificationLogRepository(
-        CustomNotificationLogRepository $customNotificationLogRepository
-    ): void {
-        $this->customNotificationLogRepository = $customNotificationLogRepository;
-    }
-
-    public function injectExportService(ExportService $exportService): void
-    {
-        $this->exportService = $exportService;
-    }
-
-    public function injectSettingsService(SettingsService $settingsService): void
-    {
-        $this->settingsService = $settingsService;
-    }
-
-    public function injectBeUserSessionService(BeUserSessionService $beUserSessionService): void
-    {
-        $this->beUserSessionService = $beUserSessionService;
-    }
-
-    public function injectIconFactory(IconFactory $iconFactory): void
-    {
-        $this->iconFactory = $iconFactory;
-    }
-
-    public function injectMaintenanceService(MaintenanceService $maintenanceService): void
-    {
-        $this->maintenanceService = $maintenanceService;
-    }
-
-    public function injectModuleTemplateFactory(ModuleTemplateFactory $moduleTemplateFactory): void
-    {
-        $this->moduleTemplateFactory = $moduleTemplateFactory;
-    }
-
-    public function injectPageRenderer(PageRenderer $pageRenderer): void
-    {
-        $this->pageRenderer = $pageRenderer;
-    }
-
-    public function injectComponentFactory(ComponentFactory $componentFactory): void
-    {
-        $this->componentFactory = $componentFactory;
-    }
-
-    public function injectPageRepository(PageRepository $pageRepository): void
-    {
-        $this->pageRepository = $pageRepository;
-    }
+    public function __construct(
+        protected readonly ModuleTemplateFactory $moduleTemplateFactory,
+        protected readonly IconFactory $iconFactory,
+        protected readonly PageRenderer $pageRenderer,
+        protected readonly ComponentFactory $componentFactory,
+        protected readonly PageRepository $pageRepository,
+        protected CustomNotificationLogRepository $customNotificationLogRepository,
+        protected ExportService $exportService,
+        protected SettingsService $settingsService,
+        protected BeUserSessionService $beUserSessionService,
+        protected MaintenanceService $maintenanceService,
+        protected EventRepository $eventRepository,
+        protected NotificationService $notificationService,
+    ) {}
 
     /**
      * Register docHeaderButtons

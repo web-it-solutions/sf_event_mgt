@@ -13,6 +13,7 @@ namespace DERHANSEN\SfEventMgt\Controller;
 
 use DERHANSEN\SfEventMgt\Domain\Model\Dto\UserRegistrationDemand;
 use DERHANSEN\SfEventMgt\Domain\Model\Registration;
+use DERHANSEN\SfEventMgt\Domain\Repository\RegistrationRepository;
 use DERHANSEN\SfEventMgt\Service\RegistrationService;
 use Psr\Http\Message\ResponseInterface;
 use TYPO3\CMS\Core\Context\Context;
@@ -22,6 +23,8 @@ class UserRegistrationController extends AbstractController
 {
     public function __construct(
         protected readonly Context $context,
+        protected readonly RegistrationService $registrationService,
+        protected readonly RegistrationRepository $registrationRepository,
     ) {
     }
 

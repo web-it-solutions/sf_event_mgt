@@ -19,6 +19,13 @@ use DERHANSEN\SfEventMgt\Domain\Model\Dto\ForeignRecordDemand;
 use DERHANSEN\SfEventMgt\Domain\Model\Dto\SearchDemand;
 use DERHANSEN\SfEventMgt\Domain\Model\Event;
 use DERHANSEN\SfEventMgt\Domain\Model\Registration;
+use DERHANSEN\SfEventMgt\Domain\Repository\CategoryRepository;
+use DERHANSEN\SfEventMgt\Domain\Repository\EventRepository;
+use DERHANSEN\SfEventMgt\Domain\Repository\LocationRepository;
+use DERHANSEN\SfEventMgt\Domain\Repository\OrganisatorRepository;
+use DERHANSEN\SfEventMgt\Domain\Repository\Registration\FieldRepository;
+use DERHANSEN\SfEventMgt\Domain\Repository\RegistrationRepository;
+use DERHANSEN\SfEventMgt\Domain\Repository\SpeakerRepository;
 use DERHANSEN\SfEventMgt\Event\AfterRegistrationCancelledEvent;
 use DERHANSEN\SfEventMgt\Event\AfterRegistrationConfirmedEvent;
 use DERHANSEN\SfEventMgt\Event\AfterRegistrationSavedEvent;
@@ -35,9 +42,14 @@ use DERHANSEN\SfEventMgt\Event\ProcessRedirectToPaymentEvent;
 use DERHANSEN\SfEventMgt\Event\WaitlistMoveUpEvent;
 use DERHANSEN\SfEventMgt\Exception;
 use DERHANSEN\SfEventMgt\Security\HashScope;
+use DERHANSEN\SfEventMgt\Service\CalendarService;
 use DERHANSEN\SfEventMgt\Service\EventCacheService;
 use DERHANSEN\SfEventMgt\Service\EventEvaluationService;
+use DERHANSEN\SfEventMgt\Service\ICalendarService;
+use DERHANSEN\SfEventMgt\Service\NotificationService;
+use DERHANSEN\SfEventMgt\Service\PaymentService;
 use DERHANSEN\SfEventMgt\Service\RateLimiterService;
+use DERHANSEN\SfEventMgt\Service\RegistrationService;
 use DERHANSEN\SfEventMgt\Utility\MessageType;
 use DERHANSEN\SfEventMgt\Utility\RegistrationResult;
 use DERHANSEN\SfEventMgt\Validation\Validator\RegistrationFieldValidator;
@@ -60,30 +72,24 @@ use TYPO3\CMS\Frontend\Controller\ErrorController;
 
 class EventController extends AbstractController
 {
-    protected EventCacheService $eventCacheService;
-    protected ViewFactoryInterface $viewFactory;
-    protected EventEvaluationService $eventEvaluationService;
-    protected RateLimiterService $rateLimiterService;
-
-    public function injectEventCacheService(EventCacheService $cacheService): void
-    {
-        $this->eventCacheService = $cacheService;
-    }
-
-    public function injectViewFactoryInterface(ViewFactoryInterface $viewFactory): void
-    {
-        $this->viewFactory = $viewFactory;
-    }
-
-    public function injectEventEvaluationService(EventEvaluationService $eventEvaluationService): void
-    {
-        $this->eventEvaluationService = $eventEvaluationService;
-    }
-
-    public function injectRateLimiterService(RateLimiterService $rateLimiterService): void
-    {
-        $this->rateLimiterService = $rateLimiterService;
-    }
+    public function __construct(
+        protected readonly ViewFactoryInterface $viewFactory,
+        protected EventCacheService $eventCacheService,
+        protected EventEvaluationService $eventEvaluationService,
+        protected RateLimiterService $rateLimiterService,
+        protected EventRepository $eventRepository,
+        protected RegistrationRepository $registrationRepository,
+        protected CategoryRepository $categoryRepository,
+        protected LocationRepository $locationRepository,
+        protected OrganisatorRepository $organisatorRepository,
+        protected SpeakerRepository $speakerRepository,
+        protected CalendarService $calendarService,
+        protected ICalendarService $icalendarService,
+        protected NotificationService $notificationService,
+        protected RegistrationService $registrationService,
+        protected PaymentService $paymentService,
+        protected FieldRepository $fieldRepository,
+    ) {}
 
     /**
      * Assign contentObjectData and pageData view
