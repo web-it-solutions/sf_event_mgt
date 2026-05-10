@@ -1,5 +1,6 @@
 <?php
 
+use DERHANSEN\SfEventMgt\Hooks\ItemsProcFunc;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use TYPO3\CMS\Core\Resource\FileType;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
@@ -30,7 +31,6 @@ return [
             'endtime' => 'endtime',
             'fe_group' => 'fe_group',
         ],
-        'searchFields' => 'title,description,startdate,enddate,max_participants,price,tax_rate,currency,category,image,registration,location,enable_registration,enable_waitlist,speaker,meta_keywords,meta_description',
         'typeicon_classes' => [
             'default' => 'ext-sfeventmgt-event',
         ],
@@ -97,7 +97,7 @@ return [
             'showitem' => 'startdate, enddate',
         ],
         'palettePrice' => [
-            'showitem' => 'price, tax_rate, currency',
+            'showitem' => 'price, tax_rate, currency, currency_iso',
         ],
         'paletteNotification' => [
             'showitem' => 'notify_admin, notify_organisator',
@@ -487,6 +487,24 @@ return [
                 ],
             ],
         ],
+        'currency_iso' => [
+            'exclude' => true,
+            'label' => 'LLL:EXT:sf_event_mgt/Resources/Private/Language/locallang_db.xlf:tx_sfeventmgt_domain_model_event.currency_iso',
+            'config' => [
+                'type' => 'select',
+                'renderType' => 'selectSingle',
+                'items' => [
+                    [
+                        'label' => '',
+                        'value' => '',
+                    ],
+                ],
+                'itemsProcFunc' => ItemsProcFunc::class . '->getCurrencies',
+                'behaviour' => [
+                    'allowLanguageSynchronization' => true,
+                ],
+            ],
+        ],
         'enable_payment' => [
             'exclude' => true,
             'label' => 'LLL:EXT:sf_event_mgt/Resources/Private/Language/locallang_db.xlf:tx_sfeventmgt_domain_model_event.enable_payment',
@@ -547,7 +565,7 @@ return [
                 'renderType' => 'selectCheckBox',
                 'size' => 5,
                 'maxitems' => 99,
-                'itemsProcFunc' => 'DERHANSEN\SfEventMgt\Hooks\ItemsProcFunc->getPaymentMethods',
+                'itemsProcFunc' => ItemsProcFunc::class . '->getPaymentMethods',
                 'behaviour' => [
                     'allowLanguageSynchronization' => true,
                 ],

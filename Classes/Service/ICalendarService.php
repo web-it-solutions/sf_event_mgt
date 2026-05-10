@@ -12,7 +12,6 @@ declare(strict_types=1);
 namespace DERHANSEN\SfEventMgt\Service;
 
 use DERHANSEN\SfEventMgt\Domain\Model\Event;
-use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Extbase\Mvc\RequestInterface;
 
 class ICalendarService
@@ -45,7 +44,7 @@ class ICalendarService
     {
         $variables = [
             'event' => $event,
-            'typo3Host' => GeneralUtility::getIndpEnv('TYPO3_HOST_ONLY'),
+            'typo3Host' => $request->getAttribute('normalizedParams')->getHttpHost(),
         ];
 
         $icalContent = $this->fluidRenderingService->renderTemplate(

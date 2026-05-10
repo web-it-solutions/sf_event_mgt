@@ -42,7 +42,6 @@ fields to the default registration form.
          Type of the registration field
 
          Possible values:
-
           * Textfield (input)
           * Radiobutton
           * Checkbox

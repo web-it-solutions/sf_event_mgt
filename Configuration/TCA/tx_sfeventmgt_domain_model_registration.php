@@ -9,6 +9,7 @@ return [
         'tstamp' => 'tstamp',
         'crdate' => 'crdate',
         'sortby' => 'sorting',
+        'versioningWS' => true,
         'typeicon_column' => 'confirmed',
         'typeicon_classes' => [
             'default' => 'ext-sfeventmgt-registration-unconfirmed',
@@ -20,7 +21,6 @@ return [
         'enablecolumns' => [
             'disabled' => 'hidden',
         ],
-        'searchFields' => 'firstname,lastname,address,zip,city,phone,email,gender,confirmed,paid,paymentmethod,payment_reference,notes,fe_user,waitlist,',
         'security' => [
             'ignorePageTypeRestriction' => true,
         ],
@@ -399,7 +399,7 @@ return [
         ],
         'temp_event_uid' => [
             'exclude' => true,
-            'label' => 'Holds temporarily the event UID of an event copy/paste/localize process in TYPO3 backend.',
+            'label' => 'Internal temporary field.',
             'config' => [
                 'type' => 'number',
             ],

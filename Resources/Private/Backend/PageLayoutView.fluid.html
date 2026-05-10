@@ -1,0 +1,21 @@
+<f:if condition="{data}">
+    <f:then>
+        <table class="table table-condensed sfeventmgt-table">
+            <tbody>
+                <f:for each="{data}" as="item">
+                    <tr>
+                        <th>{item.title}</th>
+                        <td>
+                            <f:if condition="{item.icon}">
+                                <core:icon identifier="{item.icon}" size="small" />
+                            </f:if>
+                            <f:if condition="{item.value}">
+                                {item.value -> f:format.raw()}
+                            </f:if>
+                        </td>
+                    </tr>
+                </f:for>
+            </tbody>
+        </table>
+    </f:then>
+</f:if>

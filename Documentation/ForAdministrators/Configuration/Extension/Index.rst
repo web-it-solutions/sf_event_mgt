@@ -37,7 +37,7 @@ Slug behaviour `slugBehaviour`
    unique
       The same news title in different sites will lead to different slug names.
 
-E-Mail
+Email
 =======
 
 Use FluidEmail for email notifications `useFluidEmail`

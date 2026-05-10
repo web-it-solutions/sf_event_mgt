@@ -12,6 +12,7 @@ declare(strict_types=1);
 namespace DERHANSEN\SfEventMgt\Controller;
 
 use DERHANSEN\SfEventMgt\Domain\Model\Registration;
+use DERHANSEN\SfEventMgt\Domain\Repository\RegistrationRepository;
 use DERHANSEN\SfEventMgt\Event\ModifyPaymentRedirectResponseEvent;
 use DERHANSEN\SfEventMgt\Event\ProceedWithPaymentActionEvent;
 use DERHANSEN\SfEventMgt\Event\ProcessPaymentCancelEvent;
@@ -22,6 +23,8 @@ use DERHANSEN\SfEventMgt\Event\ProcessPaymentSuccessEvent;
 use DERHANSEN\SfEventMgt\Exception;
 use DERHANSEN\SfEventMgt\Payment\Exception\PaymentException;
 use DERHANSEN\SfEventMgt\Security\HashScope;
+use DERHANSEN\SfEventMgt\Service\PaymentService;
+use DERHANSEN\SfEventMgt\Service\RegistrationService;
 use Psr\Http\Message\ResponseInterface;
 use TYPO3\CMS\Extbase\Mvc\RequestInterface;
 use TYPO3\CMS\Extbase\Security\Exception\InvalidHashException;
@@ -29,6 +32,13 @@ use TYPO3\CMS\Extbase\Utility\LocalizationUtility;
 
 class PaymentController extends AbstractController
 {
+    public function __construct(
+        protected PaymentService $paymentService,
+        protected RegistrationRepository $registrationRepository,
+        protected RegistrationService $registrationService,
+    ) {
+    }
+
     /**
      * Catches all PaymentExceptions and sets the Exception message to the response content
      */

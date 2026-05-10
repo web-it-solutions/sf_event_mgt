@@ -18,8 +18,8 @@ use DERHANSEN\SfEventMgt\Utility\MiscUtility;
 use DERHANSEN\SfEventMgt\Utility\ShowInPreviews;
 use TYPO3\CMS\Core\Context\Context;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
-use TYPO3\CMS\Extbase\Annotation\ORM\Cascade;
-use TYPO3\CMS\Extbase\Annotation\ORM\Lazy;
+use TYPO3\CMS\Extbase\Attribute\ORM\Cascade;
+use TYPO3\CMS\Extbase\Attribute\ORM\Lazy;
 use TYPO3\CMS\Extbase\Domain\Model\FileReference;
 use TYPO3\CMS\Extbase\DomainObject\AbstractEntity;
 use TYPO3\CMS\Extbase\Persistence\ObjectStorage;
@@ -42,6 +42,7 @@ class Event extends AbstractEntity
     protected float $price = 0.0;
     protected float $taxRate = 0.0;
     protected string $currency = '';
+    protected string $currencyIso = '';
     protected bool $enablePayment = false;
     protected bool $restrictPaymentMethods = false;
     protected string $selectedPaymentMethods = '';
@@ -81,7 +82,7 @@ class Event extends AbstractEntity
     /**
      * @var ObjectStorage<Registration>
      */
-    #[Cascade(['value' => 'remove'])]
+    #[Cascade(value: 'remove')]
     #[Lazy]
     protected ObjectStorage $registration;
 
@@ -118,7 +119,7 @@ class Event extends AbstractEntity
     /**
      * @var ObjectStorage<PriceOption>
      */
-    #[Cascade(['value' => 'remove'])]
+    #[Cascade(value: 'remove')]
     #[Lazy]
     protected ObjectStorage $priceOptions;
 
@@ -298,6 +299,16 @@ class Event extends AbstractEntity
     public function setCurrency(string $currency): void
     {
         $this->currency = $currency;
+    }
+
+    public function getCurrencyIso(): string
+    {
+        return $this->currencyIso;
+    }
+
+    public function setCurrencyIso(string $currencyIso): void
+    {
+        $this->currencyIso = $currencyIso;
     }
 
     public function getEnablePayment(): bool

@@ -26,17 +26,17 @@ use DERHANSEN\SfEventMgt\Utility\MessageType;
 use DERHANSEN\SfEventMgt\Utility\RegistrationResult;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 use TYPO3\CMS\Core\Context\Context;
 use TYPO3\CMS\Core\Crypto\HashService;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\Restriction\HiddenRestriction;
-use TYPO3\CMS\Core\Http\PropagateResponseException;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Extbase\Mvc\RequestInterface;
 use TYPO3\CMS\Extbase\Reflection\ObjectAccess;
-use TYPO3\CMS\Frontend\Controller\ErrorController;
 
+#[Autoconfigure(public: true)]
 class RegistrationService
 {
     public function __construct(
@@ -395,10 +395,9 @@ class RegistrationService
     }
 
     /**
-     * Checks, if the given registration belongs to the current logged in frontend user. If not, a
-     * page not found response is thrown.
+     * Returns true, if the given registration belongs to the current logged in frontend user. Else false is returned.
      */
-    public function checkRegistrationAccess(ServerRequestInterface $request, Registration $registration): void
+    public function checkRegistrationAccess(Registration $registration): bool
     {
         $isLoggedIn = $this->context->getPropertyFromAspect('frontend.user', 'isLoggedIn');
         $userUid = $this->context->getPropertyFromAspect('frontend.user', 'id');
@@ -406,12 +405,10 @@ class RegistrationService
         if (!$isLoggedIn ||
             !$registration->getFeUser() ||
             $userUid !== (int)$registration->getFeUser()->getUid()) {
-            $response = GeneralUtility::makeInstance(ErrorController::class)->pageNotFoundAction(
-                $request,
-                'Registration not found.'
-            );
-            throw new PropagateResponseException($response, 1671627320);
+            return false;
         }
+
+        return true;
     }
 
     /**

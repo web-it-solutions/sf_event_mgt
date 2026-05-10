@@ -12,18 +12,6 @@ declare(strict_types=1);
 namespace DERHANSEN\SfEventMgt\Controller;
 
 use DERHANSEN\SfEventMgt\Domain\Model\Dto\EventDemand;
-use DERHANSEN\SfEventMgt\Domain\Repository\CategoryRepository;
-use DERHANSEN\SfEventMgt\Domain\Repository\EventRepository;
-use DERHANSEN\SfEventMgt\Domain\Repository\LocationRepository;
-use DERHANSEN\SfEventMgt\Domain\Repository\OrganisatorRepository;
-use DERHANSEN\SfEventMgt\Domain\Repository\Registration\FieldRepository;
-use DERHANSEN\SfEventMgt\Domain\Repository\RegistrationRepository;
-use DERHANSEN\SfEventMgt\Domain\Repository\SpeakerRepository;
-use DERHANSEN\SfEventMgt\Service\CalendarService;
-use DERHANSEN\SfEventMgt\Service\ICalendarService;
-use DERHANSEN\SfEventMgt\Service\NotificationService;
-use DERHANSEN\SfEventMgt\Service\PaymentService;
-use DERHANSEN\SfEventMgt\Service\RegistrationService;
 use TYPO3\CMS\Core\Pagination\SlidingWindowPagination;
 use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
 use TYPO3\CMS\Extbase\Mvc\Controller\Arguments;
@@ -35,79 +23,6 @@ use TYPO3\CMS\Frontend\Page\PageInformation;
 abstract class AbstractController extends ActionController
 {
     protected array $ignoredSettingsForOverwriteDemand = ['storagepage', 'orderfieldallowed'];
-
-    protected EventRepository $eventRepository;
-    protected RegistrationRepository $registrationRepository;
-    protected CategoryRepository $categoryRepository;
-    protected LocationRepository $locationRepository;
-    protected OrganisatorRepository $organisatorRepository;
-    protected SpeakerRepository $speakerRepository;
-    protected NotificationService $notificationService;
-    protected ICalendarService $icalendarService;
-    protected RegistrationService $registrationService;
-    protected CalendarService $calendarService;
-    protected PaymentService $paymentService;
-    protected FieldRepository $fieldRepository;
-
-    public function injectCalendarService(CalendarService $calendarService): void
-    {
-        $this->calendarService = $calendarService;
-    }
-
-    public function injectCategoryRepository(CategoryRepository $categoryRepository): void
-    {
-        $this->categoryRepository = $categoryRepository;
-    }
-
-    public function injectEventRepository(EventRepository $eventRepository): void
-    {
-        $this->eventRepository = $eventRepository;
-    }
-
-    public function injectIcalendarService(ICalendarService $icalendarService): void
-    {
-        $this->icalendarService = $icalendarService;
-    }
-
-    public function injectLocationRepository(LocationRepository $locationRepository): void
-    {
-        $this->locationRepository = $locationRepository;
-    }
-
-    public function injectNotificationService(NotificationService $notificationService): void
-    {
-        $this->notificationService = $notificationService;
-    }
-
-    public function injectOrganisatorRepository(OrganisatorRepository $organisatorRepository): void
-    {
-        $this->organisatorRepository = $organisatorRepository;
-    }
-
-    public function injectSpeakerRepository(SpeakerRepository $speakerRepository): void
-    {
-        $this->speakerRepository = $speakerRepository;
-    }
-
-    public function injectPaymentService(PaymentService $paymentService): void
-    {
-        $this->paymentService = $paymentService;
-    }
-
-    public function injectRegistrationRepository(RegistrationRepository $registrationRepository): void
-    {
-        $this->registrationRepository = $registrationRepository;
-    }
-
-    public function injectRegistrationService(RegistrationService $registrationService): void
-    {
-        $this->registrationService = $registrationService;
-    }
-
-    public function injectFieldRepository(FieldRepository $fieldRepository): void
-    {
-        $this->fieldRepository = $fieldRepository;
-    }
 
     /**
      * Public getter for extbase arguments. Can be used by extending extensions in e.g. event listeners to

@@ -1,0 +1,80 @@
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers"
+      xmlns:e="http://typo3.org/ns/DERHANSEN/SfEventMgt/ViewHelpers"
+      data-namespace-typo3-fluid="true">
+
+<div class="userregistration-list-item">
+
+    <div class="userregistration-list-row">
+        <div class="userregistration-list-label">
+            <f:translate domain="sf_event_mgt.messages" key="tx_sfeventmgt_domain_model_event.title" />
+        </div>
+        <div class="userregistration-list-value event-title">
+            {registration.event.title}
+        </div>
+        <div class="clear"></div>
+    </div>
+
+    <div class="userregistration-list-row">
+        <div class="userregistration-list-label">
+            <f:translate domain="sf_event_mgt.messages" key="tx_sfeventmgt_domain_model_event.teaser" />
+        </div>
+        <div class="userregistration-list-value event-teaser">
+            {registration.event.teaser}
+        </div>
+        <div class="clear"></div>
+    </div>
+
+    <div class="userregistration-list-row">
+        <div class="userregistration-list-label">
+            <f:translate domain="sf_event_mgt.messages" key="tx_sfeventmgt_domain_model_event.startdate" />
+        </div>
+        <div class="userregistration-list-value event-startdate">
+            <f:format.date format="%d.%m.%Y - %H:%M">{registration.event.startdate}</f:format.date>
+        </div>
+        <div class="clear"></div>
+    </div>
+
+    <div class="userregistration-list-row">
+        <div class="userregistration-list-label">
+            <f:translate domain="sf_event_mgt.messages" key="tx_sfeventmgt_domain_model_event.enddate" />
+        </div>
+        <div class="userregistration-list-value event-startdate">
+            <f:format.date format="%d.%m.%Y - %H:%M">{registration.event.enddate}</f:format.date>
+        </div>
+        <div class="clear"></div>
+    </div>
+
+    <f:if condition="{registration.event.location}">
+        <div class="userregistration-list-row">
+            <div class="userregistration-list-label">
+                <f:translate domain="sf_event_mgt.messages" key="tx_sfeventmgt_domain_model_event.location" />
+            </div>
+            <div class="userregistration-list-value event-location">
+                {registration.event.location.title}
+            </div>
+            <div class="clear"></div>
+        </div>
+    </f:if>
+
+    <f:if condition="{registration.event.cancellationPossible}">
+        <div class="userregistration-list-row">
+            <div class="userregistration-list-label">
+            </div>
+            <div class="userregistration-list-value userregistration-cancel">
+                <f:variable name="hmac" value="{e:registration.hmac(registration: registration)}"/>
+                <f:link.action action="cancelRegistration" arguments="{reguid: registration.uid, hmac: hmac}" absolute="TRUE" controller="Event" extensionName="sfeventmgt" pluginName="Pieventregistration" pageUid="{settings.registrationPid}">
+                    <f:translate domain="sf_event_mgt.messages" key="userRegistration.cancel" />
+                </f:link.action>
+            </div>
+            <div class="clear"></div>
+        </div>
+    </f:if>
+
+    <f:if condition="{settings.detailPid}">
+        <f:link.action action="detail" controller="Event" pluginName="Pieventdetail" pageUid="{settings.detailPid}" arguments="{event: registration.event}">Event detail page</f:link.action>
+    </f:if>
+
+    <f:link.action action="detail" controller="UserRegistration" pluginName="Piuserreg" arguments="{registration: registration}">Show registration details</f:link.action>
+</div>
+
+</html>

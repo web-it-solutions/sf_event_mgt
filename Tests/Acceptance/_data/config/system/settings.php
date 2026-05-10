@@ -20,9 +20,9 @@ return [
                 'host' => '127.0.0.1',
                 'password' => 'root',
                 'port' => 3306,
-                'tableoptions' => [
+                'defaultTableOptions' => [
                     'charset' => 'utf8mb4',
-                    'collate' => 'utf8mb4_unicode_ci',
+                    'collation' => 'utf8mb4_unicode_ci',
                 ],
                 'user' => 'root',
             ],
@@ -81,25 +81,19 @@ return [
                 'imagesizes' => [
                     'backend' => 'TYPO3\\CMS\\Core\\Cache\\Backend\\Typo3DatabaseBackend',
                     'options' => [
-                        'compression' => 1,
+                        'compression' => true,
                     ],
                 ],
                 'pages' => [
                     'backend' => 'TYPO3\\CMS\\Core\\Cache\\Backend\\Typo3DatabaseBackend',
                     'options' => [
-                        'compression' => 1,
-                    ],
-                ],
-                'pagesection' => [
-                    'backend' => 'TYPO3\\CMS\\Core\\Cache\\Backend\\Typo3DatabaseBackend',
-                    'options' => [
-                        'compression' => 1,
+                        'compression' => true,
                     ],
                 ],
                 'rootline' => [
                     'backend' => 'TYPO3\\CMS\\Core\\Cache\\Backend\\Typo3DatabaseBackend',
                     'options' => [
-                        'compression' => 1,
+                        'compression' => true,
                     ],
                 ],
             ],

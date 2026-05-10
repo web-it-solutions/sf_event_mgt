@@ -9,7 +9,7 @@
 .. _email-attachments:
 
 ==================
-E-Mail attachments
+Email attachments
 ==================
 
 If the registration option is enabled for an event, participants can register to the

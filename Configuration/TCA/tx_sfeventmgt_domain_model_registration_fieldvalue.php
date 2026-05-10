@@ -10,10 +10,10 @@ return [
         'crdate' => 'crdate',
         'origUid' => 't3_origuid',
         'delete' => 'deleted',
+        'versioningWS' => true,
         'enablecolumns' => [
             'disabled' => 'hidden',
         ],
-        'searchFields' => 'value',
         'typeicon_classes' => [
             'default' => 'ext-sfeventmgt-registration-field',
         ],

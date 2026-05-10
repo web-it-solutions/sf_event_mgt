@@ -16,82 +16,55 @@ use DERHANSEN\SfEventMgt\Domain\Model\Dto\EventDemand;
 use DERHANSEN\SfEventMgt\Domain\Model\Dto\SearchDemand;
 use DERHANSEN\SfEventMgt\Domain\Model\Event;
 use DERHANSEN\SfEventMgt\Domain\Repository\CustomNotificationLogRepository;
+use DERHANSEN\SfEventMgt\Domain\Repository\EventRepository;
 use DERHANSEN\SfEventMgt\Event\InitAdministrationModuleTemplateEvent;
 use DERHANSEN\SfEventMgt\Event\ModifyAdministrationIndexNotifyViewVariablesEvent;
 use DERHANSEN\SfEventMgt\Event\ModifyAdministrationListViewVariablesEvent;
 use DERHANSEN\SfEventMgt\Service\BeUserSessionService;
 use DERHANSEN\SfEventMgt\Service\ExportService;
 use DERHANSEN\SfEventMgt\Service\MaintenanceService;
+use DERHANSEN\SfEventMgt\Service\NotificationService;
 use DERHANSEN\SfEventMgt\Service\SettingsService;
 use DERHANSEN\SfEventMgt\Utility\PageUtility;
 use Psr\Http\Message\ResponseInterface;
+use TYPO3\CMS\Backend\Exception\AccessDeniedException;
 use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Backend\Template\Components\ButtonBar;
+use TYPO3\CMS\Backend\Template\Components\ComponentFactory;
 use TYPO3\CMS\Backend\Template\ModuleTemplate;
 use TYPO3\CMS\Backend\Template\ModuleTemplateFactory;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
+use TYPO3\CMS\Core\Context\LanguageAspect;
+use TYPO3\CMS\Core\Domain\DateTimeFormat;
+use TYPO3\CMS\Core\Domain\Repository\PageRepository;
 use TYPO3\CMS\Core\Imaging\IconFactory;
 use TYPO3\CMS\Core\Imaging\IconSize;
 use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Page\PageRenderer;
+use TYPO3\CMS\Core\Site\Entity\Site;
 use TYPO3\CMS\Core\Type\ContextualFeedbackSeverity;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Extbase\Property\TypeConverter\DateTimeConverter;
 
 class AdministrationController extends AbstractController
 {
-    private const LANG_FILE = 'LLL:EXT:sf_event_mgt/Resources/Private/Language/locallang_be.xlf:';
-
-    protected ModuleTemplateFactory $moduleTemplateFactory;
-    protected CustomNotificationLogRepository $customNotificationLogRepository;
-    protected ExportService $exportService;
-    protected SettingsService $settingsService;
-    protected BeUserSessionService $beUserSessionService;
-    protected MaintenanceService $maintenanceService;
-    protected IconFactory $iconFactory;
-    protected PageRenderer $pageRenderer;
     protected int $pid = 0;
 
-    public function injectCustomNotificationLogRepository(
-        CustomNotificationLogRepository $customNotificationLogRepository
-    ): void {
-        $this->customNotificationLogRepository = $customNotificationLogRepository;
-    }
-
-    public function injectExportService(ExportService $exportService): void
-    {
-        $this->exportService = $exportService;
-    }
-
-    public function injectSettingsService(SettingsService $settingsService): void
-    {
-        $this->settingsService = $settingsService;
-    }
-
-    public function injectBeUserSessionService(BeUserSessionService $beUserSessionService): void
-    {
-        $this->beUserSessionService = $beUserSessionService;
-    }
-
-    public function injectIconFactory(IconFactory $iconFactory): void
-    {
-        $this->iconFactory = $iconFactory;
-    }
-
-    public function injectMaintenanceService(MaintenanceService $maintenanceService): void
-    {
-        $this->maintenanceService = $maintenanceService;
-    }
-
-    public function injectModuleTemplateFactory(ModuleTemplateFactory $moduleTemplateFactory): void
-    {
-        $this->moduleTemplateFactory = $moduleTemplateFactory;
-    }
-
-    public function injectPageRenderer(PageRenderer $pageRenderer): void
-    {
-        $this->pageRenderer = $pageRenderer;
-    }
+    public function __construct(
+        protected readonly ModuleTemplateFactory $moduleTemplateFactory,
+        protected readonly IconFactory $iconFactory,
+        protected readonly PageRenderer $pageRenderer,
+        protected readonly ComponentFactory $componentFactory,
+        protected readonly PageRepository $pageRepository,
+        protected CustomNotificationLogRepository $customNotificationLogRepository,
+        protected ExportService $exportService,
+        protected SettingsService $settingsService,
+        protected BeUserSessionService $beUserSessionService,
+        protected MaintenanceService $maintenanceService,
+        protected EventRepository $eventRepository,
+        protected NotificationService $notificationService,
+    ) {}
 
     /**
      * Register docHeaderButtons
@@ -139,9 +112,9 @@ class AdministrationController extends AbstractController
                     continue;
                 }
 
-                $title = $this->getLanguageService()->sL(self::LANG_FILE . $tableConfiguration['label']);
+                $title = (string)$this->getLanguageService()->translate($tableConfiguration['label'], 'sf_event_mgt.be');
                 $icon = $this->iconFactory->getIcon($tableConfiguration['icon'], IconSize::SMALL);
-                $viewButton = $buttonBar->makeLinkButton()
+                $viewButton = $this->componentFactory->createLinkButton()
                     ->setHref($tableConfiguration['link'])
                     ->setDataAttributes([
                         'toggle' => 'tooltip',
@@ -183,7 +156,7 @@ class AdministrationController extends AbstractController
 
         return (string)$uriBuilder->buildUriFromRoute('record_edit', [
             'edit[' . $table . '][' . $pid . ']' => 'new',
-            'returnUrl' => GeneralUtility::getIndpEnv('REQUEST_URI'),
+            'returnUrl' => $this->request->getAttribute('normalizedParams')->getRequestUri(),
         ]);
     }
 
@@ -202,6 +175,13 @@ class AdministrationController extends AbstractController
 
         $moduleTemplate->setFlashMessageQueue($this->getFlashMessageQueue());
 
+        $pageRecord = $this->pageRepository->getPage($this->pid);
+        if ($pageRecord !== []) {
+            $moduleTemplate->getDocHeaderComponent()->setPageBreadcrumb($pageRecord);
+        }
+
+        $this->createLanguageSelector($moduleTemplate);
+
         $initAdministrationModuleTemplateEvent = new InitAdministrationModuleTemplateEvent(
             $moduleTemplate,
             $this->uriBuilder,
@@ -214,6 +194,51 @@ class AdministrationController extends AbstractController
         $moduleTemplate->assignMultiple($variables);
 
         return $moduleTemplate->renderResponse($templateFileName);
+    }
+
+    /**
+     * Creates the language selector dropdown in the module toolbar if required.
+     */
+    protected function createLanguageSelector(ModuleTemplate $view): void
+    {
+        /** @var Site $site */
+        $site = $this->request->getAttribute('site');
+        $languages = [];
+
+        foreach ($site->getLanguages() as $siteLanguage) {
+            if (!$siteLanguage->enabled() ||
+                !$this->getBackendUser()->check('allowed_languages', $siteLanguage->getLanguageId())
+            ) {
+                continue;
+            }
+
+            $languages[] = $siteLanguage;
+        }
+
+        if (count($languages) <= 1) {
+            return;
+        }
+
+        $selectorLabel = $this->getLanguageService()->sL('LLL:EXT:core/Resources/Private/Language/locallang_core.xlf:labels.languages');
+        $languageDropDownButton = $this->componentFactory->createDropDownButton()
+            ->setLabel($selectorLabel)
+            ->setShowActiveLabelText(true)
+            ->setShowLabelText(true);
+
+        foreach ($languages as $language) {
+            $uri = $this->uriBuilder->reset()->setRequest($this->request)
+                ->uriFor('list', ['lang' => $language->getLanguageId()], 'Administration');
+
+            $currentLanguage = $this->getCurrentLanguage();
+            $item = $this->componentFactory->createDropDownRadio()
+                ->setActive($currentLanguage === $language->getLanguageId())
+                ->setHref($uri)
+                ->setIcon($this->iconFactory->getIcon($language->getFlagIdentifier()))
+                ->setLabel($language->getTitle());
+            $languageDropDownButton->addItem($item);
+        }
+
+        $view->getDocHeaderComponent()->setLanguageSelector($languageDropDownButton);
     }
 
     public function initializeAction(): void
@@ -230,6 +255,17 @@ class AdministrationController extends AbstractController
         if (!empty($this->settings)) {
             $this->settings['search']['dateFormat'] = 'Y-m-d\TH:i:s\Z';
         }
+        $constraintConfiguration = $this->arguments->getArgument('searchDemand')->getPropertyMappingConfiguration();
+        $constraintConfiguration->forProperty('startDate')->setTypeConverterOption(
+            DateTimeConverter::class,
+            DateTimeConverter::CONFIGURATION_DATE_FORMAT,
+            DateTimeFormat::ISO8601_LOCALTIME
+        );
+        $constraintConfiguration->forProperty('endDate')->setTypeConverterOption(
+            DateTimeConverter::class,
+            DateTimeConverter::CONFIGURATION_DATE_FORMAT,
+            DateTimeFormat::ISO8601_LOCALTIME
+        );
     }
 
     /**
@@ -244,25 +280,19 @@ class AdministrationController extends AbstractController
         if ($searchDemand !== null) {
             $searchDemand->setFields($this->settings['search']['fields'] ?? 'title');
 
-            $sessionData = [];
-            $sessionData['searchDemand'] = $searchDemand->toArray();
-            $sessionData['overwriteDemand'] = $overwriteDemand;
-            $this->beUserSessionService->saveSessionData($sessionData);
+            $this->beUserSessionService->saveSessionData('searchDemand', $searchDemand->toArray());
+            $this->beUserSessionService->saveSessionData('overwriteDemand', $overwriteDemand);
         } else {
             // Try to restore search demand from Session
-            $sessionSearchDemand = $this->beUserSessionService->getSessionDataByKey('searchDemand') ?? [];
+            $sessionSearchDemand = $this->beUserSessionService->getSessionData('searchDemand') ?? [];
             $searchDemand = SearchDemand::fromArray($sessionSearchDemand);
-            $overwriteDemand = $this->beUserSessionService->getSessionDataByKey('overwriteDemand');
+            $overwriteDemand = $this->beUserSessionService->getSessionData('overwriteDemand') ?? [];
         }
 
         if ($this->isResetFilter()) {
             $searchDemand = GeneralUtility::makeInstance(SearchDemand::class);
-            $overwriteDemand = [];
-
-            $sessionData = [];
-            $sessionData['searchDemand'] = $searchDemand->toArray();
-            $sessionData['overwriteDemand'] = $overwriteDemand;
-            $this->beUserSessionService->saveSessionData($sessionData);
+            $this->beUserSessionService->saveSessionData('searchDemand', $searchDemand->toArray());
+            $this->beUserSessionService->saveSessionData('overwriteDemand', []);
         }
 
         // Initialize default ordering when no overwriteDemand is available
@@ -286,6 +316,7 @@ class AdministrationController extends AbstractController
             $eventDemand->setIgnoreEnableFields(true);
             $eventDemand->setStoragePage($pageUids);
 
+            $this->setRepositoryLanguage();
             $events = $this->eventRepository->findDemanded($eventDemand);
             $pagination = $this->getPagination($events, $this->settings['pagination'] ?? []);
         }
@@ -369,8 +400,8 @@ class AdministrationController extends AbstractController
         $this->maintenanceService->handleExpiredRegistrations($delete);
 
         $this->addFlashMessage(
-            $this->getLanguageService()->sL(self::LANG_FILE . 'administration.message-1.content'),
-            $this->getLanguageService()->sL(self::LANG_FILE . 'administration.message-1.title')
+            (string)$this->getLanguageService()->translate('administration.message-1.content', 'sf_event_mgt.be'),
+            (string)$this->getLanguageService()->translate('administration.message-1.title', 'sf_event_mgt.be')
         );
 
         return $this->redirect('list');
@@ -414,32 +445,37 @@ class AdministrationController extends AbstractController
         return [
             [
                 'value' => CustomNotification::RECIPIENTS_ALL,
-                'label' => $this->getLanguageService()->sL(
-                    self::LANG_FILE . 'administration.notify.recipients.' . CustomNotification::RECIPIENTS_ALL
+                'label' => (string)$this->getLanguageService()->translate(
+                    'administration.notify.recipients.' . CustomNotification::RECIPIENTS_ALL,
+                    'sf_event_mgt.be'
                 ),
             ],
             [
                 'value' => CustomNotification::RECIPIENTS_CONFIRMED,
-                'label' => $this->getLanguageService()->sL(
-                    self::LANG_FILE . 'administration.notify.recipients.' . CustomNotification::RECIPIENTS_CONFIRMED
+                'label' => (string)$this->getLanguageService()->translate(
+                    'administration.notify.recipients.' . CustomNotification::RECIPIENTS_CONFIRMED,
+                    'sf_event_mgt.be'
                 ),
             ],
             [
                 'value' => CustomNotification::RECIPIENTS_UNCONFIRMED,
-                'label' => $this->getLanguageService()->sL(
-                    self::LANG_FILE . 'administration.notify.recipients.' . CustomNotification::RECIPIENTS_UNCONFIRMED
+                'label' => (string)$this->getLanguageService()->translate(
+                    'administration.notify.recipients.' . CustomNotification::RECIPIENTS_UNCONFIRMED,
+                    'sf_event_mgt.be'
                 ),
             ],
             [
                 'value' => CustomNotification::RECIPIENTS_WAITLIST_CONFIRMED,
-                'label' => $this->getLanguageService()->sL(
-                    self::LANG_FILE . 'administration.notify.recipients.' . CustomNotification::RECIPIENTS_WAITLIST_CONFIRMED
+                'label' => (string)$this->getLanguageService()->translate(
+                    'administration.notify.recipients.' . CustomNotification::RECIPIENTS_WAITLIST_CONFIRMED,
+                    'sf_event_mgt.be'
                 ),
             ],
             [
                 'value' => CustomNotification::RECIPIENTS_WAITLIST_UNCONFIRMED,
-                'label' => $this->getLanguageService()->sL(
-                    self::LANG_FILE . 'administration.notify.recipients.' . CustomNotification::RECIPIENTS_WAITLIST_UNCONFIRMED
+                'label' => (string)$this->getLanguageService()->translate(
+                    'administration.notify.recipients.' . CustomNotification::RECIPIENTS_WAITLIST_UNCONFIRMED,
+                    'sf_event_mgt.be'
                 ),
             ],
         ];
@@ -468,8 +504,8 @@ class AdministrationController extends AbstractController
             $customNotification
         );
         $this->addFlashMessage(
-            $this->getLanguageService()->sL(self::LANG_FILE . 'administration.message-2.content'),
-            $this->getLanguageService()->sL(self::LANG_FILE . 'administration.message-2.title')
+            (string)$this->getLanguageService()->translate('administration.message-2.content', 'sf_event_mgt.be'),
+            (string)$this->getLanguageService()->translate('administration.message-2.title', 'sf_event_mgt.be')
         );
         return $this->redirect('list');
     }
@@ -482,8 +518,8 @@ class AdministrationController extends AbstractController
     {
         if ($this->getBackendUser()->isInWebMount($event->getPid()) === null) {
             $this->addFlashMessage(
-                $this->getLanguageService()->sL(self::LANG_FILE . 'administration.accessdenied.content'),
-                $this->getLanguageService()->sL(self::LANG_FILE . 'administration.accessdenied.title'),
+                (string)$this->getLanguageService()->translate('administration.accessdenied.content', 'sf_event_mgt.be'),
+                (string)$this->getLanguageService()->translate('administration.accessdenied.title', 'sf_event_mgt.be'),
                 ContextualFeedbackSeverity::ERROR
             );
             return false;
@@ -514,8 +550,8 @@ class AdministrationController extends AbstractController
     public function getOrderDirections(): array
     {
         return [
-            'asc' => $this->getLanguageService()->sL(self::LANG_FILE . 'administration.sortOrder.asc'),
-            'desc' => $this->getLanguageService()->sL(self::LANG_FILE . 'administration.sortOrder.desc'),
+            'asc' => (string)$this->getLanguageService()->translate('administration.sortOrder.asc', 'sf_event_mgt.be'),
+            'desc' => (string)$this->getLanguageService()->translate('administration.sortOrder.desc', 'sf_event_mgt.be'),
         ];
     }
 
@@ -525,12 +561,12 @@ class AdministrationController extends AbstractController
     public function getRecursiveLevels(): array
     {
         return [
-            $this->getLanguageService()->sL(self::LANG_FILE . 'administration.recursiveLevel.current'),
-            $this->getLanguageService()->sL(self::LANG_FILE . 'administration.recursiveLevel.level1'),
-            $this->getLanguageService()->sL(self::LANG_FILE . 'administration.recursiveLevel.level2'),
-            $this->getLanguageService()->sL(self::LANG_FILE . 'administration.recursiveLevel.level3'),
-            $this->getLanguageService()->sL(self::LANG_FILE . 'administration.recursiveLevel.level4'),
-            $this->getLanguageService()->sL(self::LANG_FILE . 'administration.recursiveLevel.level5'),
+            $this->getLanguageService()->translate('administration.recursiveLevel.current', 'sf_event_mgt.be') ?? '',
+            $this->getLanguageService()->translate('administration.recursiveLevel.level1', 'sf_event_mgt.be') ?? '',
+            $this->getLanguageService()->translate('administration.recursiveLevel.level2', 'sf_event_mgt.be') ?? '',
+            $this->getLanguageService()->translate('administration.recursiveLevel.level3', 'sf_event_mgt.be') ?? '',
+            $this->getLanguageService()->translate('administration.recursiveLevel.level4', 'sf_event_mgt.be') ?? '',
+            $this->getLanguageService()->translate('administration.recursiveLevel.level5', 'sf_event_mgt.be') ?? '',
         ];
     }
 
@@ -540,10 +576,41 @@ class AdministrationController extends AbstractController
     public function getOrderByFields(): array
     {
         return [
-            'title' => $this->getLanguageService()->sL(self::LANG_FILE . 'administration.orderBy.title'),
-            'startdate' => $this->getLanguageService()->sL(self::LANG_FILE . 'administration.orderBy.startdate'),
-            'enddate' => $this->getLanguageService()->sL(self::LANG_FILE . 'administration.orderBy.enddate'),
+            'title' => $this->getLanguageService()->translate('administration.orderBy.title', 'sf_event_mgt.be') ?? '',
+            'startdate' => $this->getLanguageService()->translate('administration.orderBy.startdate', 'sf_event_mgt.be') ?? '',
+            'enddate' => $this->getLanguageService()->translate('administration.orderBy.enddate', 'sf_event_mgt.be') ?? '',
         ];
+    }
+
+    protected function setRepositoryLanguage(): void
+    {
+        $language = $this->getCurrentLanguage();
+        if ($language === 0) {
+            return;
+        }
+
+        $languageAspect = new LanguageAspect($language);
+        $querySettings = $this->eventRepository->createQuery()->getQuerySettings();
+        $querySettings->setLanguageAspect($languageAspect);
+        $querySettings->setRespectSysLanguage(true);
+        $this->eventRepository->setDefaultQuerySettings($querySettings);
+    }
+
+    protected function getCurrentLanguage(): int
+    {
+        $language = $this->beUserSessionService->getSessionData('language');
+        $languageFromQueryParam = $this->request->getQueryParams()['lang'] ?? null;
+
+        if (($language !== null && $languageFromQueryParam === null) || $language === $languageFromQueryParam) {
+            return (int)$language;
+        }
+
+        if (!$this->getBackendUser()->check('allowed_languages', $languageFromQueryParam)) {
+            throw new AccessDeniedException('User does not have permission to access language');
+        }
+
+        $this->beUserSessionService->saveSessionData('language', (string)$languageFromQueryParam);
+        return (int)$languageFromQueryParam;
     }
 
     protected function getLanguageService(): LanguageService

@@ -352,7 +352,7 @@ Displaying events using the "Insert Record" content element
 ===========================================================
 
 If you display events using the "Insert Record" content element, you may want to use a different layout to display
-the event detail view. For this purpose, you can use :php:`{settings.detail.isShortcut}` in the Detail.html Fluid
+the event detail view. For this purpose, you can use :php:`{settings.detail.isShortcut}` in the Detail.fluid.html Fluid
 Template to render a different layout.
 
 .. rst-class:: panel panel-default

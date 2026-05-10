@@ -1,0 +1,115 @@
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers"
+      xmlns:e="http://typo3.org/ns/DERHANSEN/SfEventMgt/ViewHelpers"
+      data-namespace-typo3-fluid="true">
+
+<f:layout name="Module" />
+
+<f:section name="Content">
+    <h1>
+        <f:translate domain="sf_event_mgt.be" key="administration.notify" />
+    </h1>
+
+    <f:if condition="{settings.notification.disabled}">
+        <f:render partial="Administration/NotificationDisabledWarning" />
+    </f:if>
+    <f:if condition="{settings.notification.senderEmail} == ''">
+        <f:render partial="Administration/NoEmailSenderWarning" />
+    </f:if>
+
+    <f:if condition="!{settings.notification.disabled} && {settings.notification.senderEmail} != ''">
+        <f:render partial="Administration/Event" arguments="{event: event}" />
+
+        <div class="notifyhead">
+            <p><f:translate domain="sf_event_mgt.be" key="administration.notify.description" /></p>
+
+            <f:form name="customNotification" object="{customNotification}" action="notify" arguments="{event: event}" class="form-horizontal">
+                <div class="form-group">
+                    <label for="template" class="col-xs-2 control-label">
+                        <f:translate domain="sf_event_mgt.be" key="administration.notify.label.template" />
+                    </label>
+
+                    <div class="col-xs-10">
+                        <f:form.select id="template" property="template" options="{customNotifications}" class="form-select" />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="template" class="col-xs-2 control-label">
+                        <f:translate domain="sf_event_mgt.be" key="administration.notify.label.recipients" />
+                    </label>
+
+                    <div class="col-xs-10">
+                        <f:form.select id="recipients" property="recipients" options="{recipients}" optionValueField="value" optionLabelField="label" class="form-select" />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="overwriteSubject" class="col-xs-2 control-label">
+                        <f:translate domain="sf_event_mgt.be" key="administration.notify.label.overwriteSubject" />
+                    </label>
+
+                    <div class="col-xs-10">
+                        <f:form.textfield id="overwriteSubject" property="overwriteSubject" class="form-control" placeholder="{f:translate(key: 'LLL:EXT:sf_event_mgt/Resources/Private/Language/locallang_be.xlf:administration.notify.description.overwriteSubject')}" />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="additionalMessage" class="col-xs-2 control-label">
+                        <f:translate domain="sf_event_mgt.be" key="administration.notify.label.additionalMessage" />
+                    </label>
+
+                    <div class="col-xs-10">
+                        <f:form.textarea rows="5" id="additionalMessage" property="additionalMessage" class="form-control" placeholder="{f:translate(key: 'LLL:EXT:sf_event_mgt/Resources/Private/Language/locallang_be.xlf:administration.notify.description.additionalMessage')}" />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="col-xs-offset-2 col-xs-10">
+                        <button type="submit" class="btn btn-default" name="search" title="Search">
+                            <f:translate domain="sf_event_mgt.be" key="administration.notify.sendNotifications" />
+                        </button>
+                    </div>
+                </div>
+            </f:form>
+        </div>
+    </f:if>
+
+    <h3>
+        <f:translate domain="sf_event_mgt.be" key="administration.notificationHistory" />
+    </h3>
+
+    <table class="table table-striped table-hover">
+        <thead>
+        <tr>
+            <th><f:translate domain="sf_event_mgt.be" key="administration.notify.date" /></th>
+            <th><f:translate domain="sf_event_mgt.be" key="administration.notify.details" /></th>
+            <th><f:translate domain="sf_event_mgt.be" key="administration.notify.emailsSent" /></th>
+            <th><f:translate domain="sf_event_mgt.be" key="administration.notify.sentBy" /></th>
+        </tr>
+        </thead>
+        <tbody>
+        <f:for each="{logEntries}" as="logEntry">
+            <tr>
+                <td class="logdate"><f:format.date format="%d.%m.%Y - %H:%M:%S">{logEntry.tstamp}</f:format.date></td>
+                <td>{logEntry.details -> f:format.nl2br()}</td>
+                <td>{logEntry.emailsSent}</td>
+                <td>
+                    <f:variable name="backendUser" value="{e:be.backendUser(userUid: logEntry.cruserId)}" />
+                    <f:if condition="{backendUser}">
+                        <f:then>
+                            {backendUser.username}
+                        </f:then>
+                        <f:else>
+                            <f:translate domain="sf_event_mgt.be" key="administration.notify.notAvailable" />
+                        </f:else>
+                    </f:if>
+                </td>
+            </tr>
+        </f:for>
+        </tbody>
+    </table>
+
+    <f:link.action action="list" class="btn btn-default">
+        <f:translate domain="sf_event_mgt.be" key="administration.notify.cancelSendNotifications" />
+    </f:link.action>
+
+</f:section>
+
+</html>

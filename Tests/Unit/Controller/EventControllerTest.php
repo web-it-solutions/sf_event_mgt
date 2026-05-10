@@ -21,13 +21,11 @@ use TYPO3\CMS\Extbase\Mvc\Controller\Arguments;
 use TYPO3\CMS\Extbase\Mvc\Controller\MvcPropertyMappingConfiguration;
 use TYPO3\CMS\Extbase\Mvc\Request;
 use TYPO3\CMS\Extbase\Property\TypeConverter\DateTimeConverter;
-use TYPO3\CMS\Frontend\Controller\TypoScriptFrontendController;
 use TYPO3\TestingFramework\Core\Unit\UnitTestCase;
 
 class EventControllerTest extends UnitTestCase
 {
     protected EventController&MockObject $subject;
-    protected TypoScriptFrontendController&MockObject $tsfe;
 
     /**
      * Setup
@@ -47,14 +45,6 @@ class EventControllerTest extends UnitTestCase
             '',
             false
         );
-        $this->tsfe = $this->getAccessibleMock(
-            TypoScriptFrontendController::class,
-            [],
-            [],
-            '',
-            false
-        );
-        $GLOBALS['TSFE'] = $this->tsfe;
     }
 
     /**
@@ -160,7 +150,7 @@ class EventControllerTest extends UnitTestCase
         ];
 
         $this->expectExceptionCode(1671205677);
-        $mock = $this->getAccessibleMock(EventController::class, ['redirect']);
+        $mock = $this->getAccessibleMock(EventController::class, ['redirect'], [], '', false);
         $mock->_call('handleEventNotFoundError', $settings);
     }
 
@@ -174,7 +164,7 @@ class EventControllerTest extends UnitTestCase
             ],
         ];
 
-        $mock = $this->getAccessibleMock(EventController::class, ['redirect']);
+        $mock = $this->getAccessibleMock(EventController::class, ['redirect'], [], '', false);
         $mock->expects(self::once())->method('redirect')->with('list', null, null, null, 100);
         $mock->_call('handleEventNotFoundError', $settings);
     }
@@ -188,7 +178,7 @@ class EventControllerTest extends UnitTestCase
             ],
         ];
 
-        $mock = $this->getAccessibleMock(EventController::class, ['redirect']);
+        $mock = $this->getAccessibleMock(EventController::class, ['redirect'], [], '', false);
         $mock->expects(self::once())->method('redirect')->with('list', null, null, null, 1);
         $mock->_call('handleEventNotFoundError', $settings);
     }
@@ -243,7 +233,7 @@ class EventControllerTest extends UnitTestCase
     #[Test]
     public function isOverwriteDemandIsWorking(array $settings, array $overwriteDemand, bool $expected): void
     {
-        $mockedController = $this->getAccessibleMock(EventController::class, null);
+        $mockedController = $this->getAccessibleMock(EventController::class, null, [], '', false);
 
         $mockedController->_set('settings', $settings);
         self::assertEquals($expected, $mockedController->_call('isOverwriteDemand', $overwriteDemand));

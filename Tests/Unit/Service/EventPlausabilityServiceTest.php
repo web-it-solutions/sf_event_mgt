@@ -25,23 +25,23 @@ class EventPlausabilityServiceTest extends UnitTestCase
     {
         return [
             'no dates' => [
-                0,
-                0,
+                null,
+                null,
                 true,
             ],
             'startdate only' => [
-                strtotime('2021-03-01T10:00:00+00:00'),
-                0,
+                new \DateTimeImmutable('2021-03-01T10:00:00+00:00'),
+                null,
                 true,
             ],
             'startdate before enddate' => [
-                strtotime('2021-03-01T10:00:00+00:00'),
-                strtotime('2021-03-01T11:00:00+00:00'),
+                new \DateTimeImmutable('2021-03-01T10:00:00+00:00'),
+                new \DateTimeImmutable('2021-03-01T11:00:00+00:00'),
                 true,
             ],
             'enddate before startdate' => [
-                strtotime('2021-03-01T11:00:00+00:00'),
-                strtotime('2021-03-01T10:00:00+00:00'),
+                new \DateTimeImmutable('2021-03-01T11:00:00+00:00'),
+                new \DateTimeImmutable('2021-03-01T10:00:00+00:00'),
                 false,
             ],
         ];
@@ -49,8 +49,11 @@ class EventPlausabilityServiceTest extends UnitTestCase
 
     #[DataProvider('isStartDateBeforeEndDateDataProvider')]
     #[Test]
-    public function isStartDateBeforeEndDateReturnsExpectedResults(int $startdate, int $enddate, bool $expected): void
-    {
+    public function isStartDateBeforeEndDateReturnsExpectedResults(
+        ?\DateTimeImmutable $startdate = null,
+        ?\DateTimeImmutable $enddate = null,
+        bool $expected = false
+    ): void {
         $service = $this->getAccessibleMock(EventPlausabilityService::class, null, [], '', false);
         self::assertEquals($expected, $service->_call('isStartDateBeforeEndDate', $startdate, $enddate));
     }
@@ -59,7 +62,7 @@ class EventPlausabilityServiceTest extends UnitTestCase
     public function verifyOrganisatorConfigurationWithNoOrganisatorAndDisabledRegistrationAddsNoFlashMessage(): void
     {
         $languageService = $this->createMock(LanguageService::class);
-        $languageService->expects(self::never())->method('sL');
+        $languageService->expects(self::never())->method('translate');
         $GLOBALS['LANG'] = $languageService;
 
         $databaseRow = [
@@ -75,7 +78,7 @@ class EventPlausabilityServiceTest extends UnitTestCase
     public function verifyOrganisatorConfigurationWithNoOrganisatorAddsFlashMessage(): void
     {
         $languageService = $this->createMock(LanguageService::class);
-        $languageService->expects(self::atLeastOnce())->method('sL');
+        $languageService->expects(self::atLeastOnce())->method('translate');
         $GLOBALS['LANG'] = $languageService;
 
         $databaseRow = [
@@ -91,7 +94,7 @@ class EventPlausabilityServiceTest extends UnitTestCase
     public function verifyOrganisatorConfigurationWithOrganisatorAndNoEmailAddsFlashMessage(): void
     {
         $languageService = $this->createMock(LanguageService::class);
-        $languageService->expects(self::atLeastOnce())->method('sL');
+        $languageService->expects(self::atLeastOnce())->method('translate');
         $GLOBALS['LANG'] = $languageService;
 
         $databaseRow = [
@@ -114,7 +117,7 @@ class EventPlausabilityServiceTest extends UnitTestCase
     public function verifyOrganisatorConfigurationWithOrganisatorAndValidEmailAddsNoFlashMessage(): void
     {
         $languageService = $this->createMock(LanguageService::class);
-        $languageService->expects(self::never())->method('sL');
+        $languageService->expects(self::never())->method('translate');
         $GLOBALS['LANG'] = $languageService;
 
         $databaseRow = [

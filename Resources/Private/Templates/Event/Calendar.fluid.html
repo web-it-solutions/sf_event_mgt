@@ -1,0 +1,80 @@
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers" data-namespace-typo3-fluid="true">
+
+<f:layout name="Default" />
+
+<f:section name="main">
+
+	<h1><f:translate domain="sf_event_mgt.messages" key="calendar.title" /></h1>
+
+	<div class="event-calendar">
+
+        <f:comment>
+            === Browse calendar by week ====
+
+            <ul class="event-calendar__browser">
+                <li class="event-calendar__browser-prev">
+                    <f:link.action rel="nofollow" action="calendar" controller="Event" arguments="{overwriteDemand:{week: weekConfig.previous.weeknumber, year: weekConfig.previous.year}}">
+                        &larr; <f:translate domain="sf_event_mgt.messages" key="calendar.week" /> {weekConfig.previous.weeknumber}
+                    </f:link.action>
+                </li>
+                <li class="event-calendar__browser-current"><h3><f:translate domain="sf_event_mgt.messages" key="calendar.week" /> {weekConfig.current.weeknumber}</h3></li>
+                <li class="event-calendar__browser-next">
+                    <f:link.action rel="nofollow" action="calendar" controller="Event" arguments="{overwriteDemand:{week: weekConfig.next.weeknumber, year: weekConfig.next.year}}">
+                        <f:translate domain="sf_event_mgt.messages" key="calendar.week" /> {weekConfig.next.weeknumber} &rarr;
+                    </f:link.action>
+                </li>
+            </ul>
+
+            <ul class="event-calendar__days">
+                <f:for each="{weeks.{weekConfig.current.weeknumber}}" as="day">
+                    <f:render partial="Event/CalendarDayItem" arguments="{day: day, settings: settings}"/>
+                </f:for>
+            </ul>
+
+        </f:comment>
+
+        <f:comment>
+            === Browse calendar by month ===
+        </f:comment>
+		<ul class="event-calendar__browser">
+			<li class="event-calendar__browser-prev">
+		                <f:link.action rel="nofollow" action="calendar" controller="Event" arguments="{overwriteDemand:{month: previousMonthConfig.month, year: previousMonthConfig.year}}">
+					&larr; {f:format.date(date: previousMonthConfig.date, format: '%B %Y')}
+				</f:link.action>
+			</li>
+			<li class="event-calendar__browser-current"><h3>{firstDayOfMonth -> f:format.date(format: '%B')}</h3></li>
+			<li class="event-calendar__browser-next">
+				<f:link.action rel="nofollow" action="calendar" controller="Event" arguments="{overwriteDemand:{month: nextMonthConfig.month, year: nextMonthConfig.year}}">
+					{f:format.date(date: nextMonthConfig.date, format: '%B %Y')} &rarr;
+				</f:link.action>
+			</li>
+		</ul>
+
+		<ul class="event-calendar__weekdays">
+			<f:if condition="{settings.calendar.showWeekNumber}">
+				<li class="event-calendar__weeknumber"></li>
+			</f:if>
+			<f:for each="{weeks}" as="week" iteration="i">
+                <f:if condition="{i.isFirst}">
+                    <f:for each="{week}" as="weekday">
+                        <li class="event-calendar__weekdays-weekday">{f:format.date(date: weekday.timestamp, format: '%a')}</li>
+                    </f:for>
+                </f:if>
+			</f:for>
+		</ul>
+
+		<f:for each="{weeks}" as="week">
+			<ul class="event-calendar__days">
+				<f:if condition="{settings.calendar.showWeekNumber}">
+					<li class="event-calendar__weeknumber">{week.0.weekNumber}</li>
+				</f:if>
+				<f:for each="{week}" as="day">
+					<f:render partial="Event/CalendarDayItem" arguments="{day: day, settings: settings}"/>
+				</f:for>
+			</ul>
+		</f:for>
+
+	</div>
+</f:section>
+
+</html>

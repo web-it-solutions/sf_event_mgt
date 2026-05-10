@@ -19,6 +19,13 @@ use DERHANSEN\SfEventMgt\Domain\Model\Dto\ForeignRecordDemand;
 use DERHANSEN\SfEventMgt\Domain\Model\Dto\SearchDemand;
 use DERHANSEN\SfEventMgt\Domain\Model\Event;
 use DERHANSEN\SfEventMgt\Domain\Model\Registration;
+use DERHANSEN\SfEventMgt\Domain\Repository\CategoryRepository;
+use DERHANSEN\SfEventMgt\Domain\Repository\EventRepository;
+use DERHANSEN\SfEventMgt\Domain\Repository\LocationRepository;
+use DERHANSEN\SfEventMgt\Domain\Repository\OrganisatorRepository;
+use DERHANSEN\SfEventMgt\Domain\Repository\Registration\FieldRepository;
+use DERHANSEN\SfEventMgt\Domain\Repository\RegistrationRepository;
+use DERHANSEN\SfEventMgt\Domain\Repository\SpeakerRepository;
 use DERHANSEN\SfEventMgt\Event\AfterRegistrationCancelledEvent;
 use DERHANSEN\SfEventMgt\Event\AfterRegistrationConfirmedEvent;
 use DERHANSEN\SfEventMgt\Event\AfterRegistrationSavedEvent;
@@ -35,9 +42,14 @@ use DERHANSEN\SfEventMgt\Event\ProcessRedirectToPaymentEvent;
 use DERHANSEN\SfEventMgt\Event\WaitlistMoveUpEvent;
 use DERHANSEN\SfEventMgt\Exception;
 use DERHANSEN\SfEventMgt\Security\HashScope;
+use DERHANSEN\SfEventMgt\Service\CalendarService;
 use DERHANSEN\SfEventMgt\Service\EventCacheService;
 use DERHANSEN\SfEventMgt\Service\EventEvaluationService;
+use DERHANSEN\SfEventMgt\Service\ICalendarService;
+use DERHANSEN\SfEventMgt\Service\NotificationService;
+use DERHANSEN\SfEventMgt\Service\PaymentService;
 use DERHANSEN\SfEventMgt\Service\RateLimiterService;
+use DERHANSEN\SfEventMgt\Service\RegistrationService;
 use DERHANSEN\SfEventMgt\Utility\MessageType;
 use DERHANSEN\SfEventMgt\Utility\RegistrationResult;
 use DERHANSEN\SfEventMgt\Validation\Validator\RegistrationFieldValidator;
@@ -51,7 +63,7 @@ use TYPO3\CMS\Core\Utility\ArrayUtility;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\View\ViewFactoryData;
 use TYPO3\CMS\Core\View\ViewFactoryInterface;
-use TYPO3\CMS\Extbase\Annotation as Extbase;
+use TYPO3\CMS\Extbase\Attribute\Validate;
 use TYPO3\CMS\Extbase\Persistence\Generic\PersistenceManager;
 use TYPO3\CMS\Extbase\Property\TypeConverter\DateTimeConverter;
 use TYPO3\CMS\Extbase\Property\TypeConverter\PersistentObjectConverter;
@@ -60,30 +72,24 @@ use TYPO3\CMS\Frontend\Controller\ErrorController;
 
 class EventController extends AbstractController
 {
-    protected EventCacheService $eventCacheService;
-    protected ViewFactoryInterface $viewFactory;
-    protected EventEvaluationService $eventEvaluationService;
-    protected RateLimiterService $rateLimiterService;
-
-    public function injectEventCacheService(EventCacheService $cacheService): void
-    {
-        $this->eventCacheService = $cacheService;
-    }
-
-    public function injectViewFactoryInterface(ViewFactoryInterface $viewFactory): void
-    {
-        $this->viewFactory = $viewFactory;
-    }
-
-    public function injectEventEvaluationService(EventEvaluationService $eventEvaluationService): void
-    {
-        $this->eventEvaluationService = $eventEvaluationService;
-    }
-
-    public function injectRateLimiterService(RateLimiterService $rateLimiterService): void
-    {
-        $this->rateLimiterService = $rateLimiterService;
-    }
+    public function __construct(
+        protected readonly ViewFactoryInterface $viewFactory,
+        protected EventCacheService $eventCacheService,
+        protected EventEvaluationService $eventEvaluationService,
+        protected RateLimiterService $rateLimiterService,
+        protected EventRepository $eventRepository,
+        protected RegistrationRepository $registrationRepository,
+        protected CategoryRepository $categoryRepository,
+        protected LocationRepository $locationRepository,
+        protected OrganisatorRepository $organisatorRepository,
+        protected SpeakerRepository $speakerRepository,
+        protected CalendarService $calendarService,
+        protected ICalendarService $icalendarService,
+        protected NotificationService $notificationService,
+        protected RegistrationService $registrationService,
+        protected PaymentService $paymentService,
+        protected FieldRepository $fieldRepository,
+    ) {}
 
     /**
      * Assign contentObjectData and pageData view
@@ -349,7 +355,7 @@ class EventController extends AbstractController
     /**
      * Handles a rate limit error by returning a response with the given handling method
      */
-    protected function handleRateLimit(array $settings): ResponseInterface
+    protected function handleActionRateLimit(array $settings): ResponseInterface
     {
         $allowedHandlings = ['httpResponse429', 'flashMessage'];
         $handling = $settings['handling'] ?? 'httpResponse429';
@@ -493,7 +499,7 @@ class EventController extends AbstractController
             }
 
             // allow subvalues in new property mapper
-            $propertyMapping->forProperty('fieldValues')->allowProperties($index);
+            $propertyMapping->forProperty('fieldValues')->allowProperties((string)$index);
             $propertyMapping->forProperty('fieldValues.' . $index)->allowAllProperties();
             $propertyMapping->allowCreationForSubProperty('fieldValues.' . $index);
             $propertyMapping->allowModificationForSubProperty('fieldValues.' . $index);
@@ -553,22 +559,18 @@ class EventController extends AbstractController
     /**
      * Saves the registration
      */
-    #[Extbase\Validate([
-        'validator' => RegistrationFieldValidator::class,
-        'param' => 'registration',
-    ])]
-    #[Extbase\Validate([
-        'validator' => RegistrationValidator::class,
-        'param' => 'registration',
-    ])]
-    public function saveRegistrationAction(Registration $registration, Event $event): ResponseInterface
-    {
+    public function saveRegistrationAction(
+        #[Validate(validator: RegistrationFieldValidator::class)]
+        #[Validate(validator: RegistrationValidator::class)]
+        Registration $registration,
+        Event $event
+    ): ResponseInterface {
         if ($this->rateLimiterService->isRequestRateLimited(
             $this->request,
             __FUNCTION__,
             $this->settings['registration']['rateLimit'] ?? []
         )) {
-            return $this->handleRateLimit($this->settings['registration']['rateLimit']);
+            return $this->handleActionRateLimit($this->settings['registration']['rateLimit']);
         }
 
         $event = $this->eventEvaluationService->evaluateForSaveRegistrationAction(

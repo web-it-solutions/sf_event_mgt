@@ -50,6 +50,7 @@ Event management and registration is an extension for TYPO3 CMS to manage events
 * Console command to delete registrations of expired registrations
 * Automatic cache invalidation when an event has been changed in the backend
 * Automatic page cache lifetime calculation based on several event properties
+* Helper utility class to handle ISO 4217 currency codes
 * A lot of PSR-14 Events to extend the extension with own functionality
 
 **Background**
@@ -90,9 +91,10 @@ migrations regarding breaking changes.
 
 | Version | TYPO3     | PHP       | Support/Development                  |
 |---------|-----------|-----------|--------------------------------------|
-| 8.x     | 13.4      | 8.2 - 8.4 | Features, Bugfixes, Security Updates |
-| 7.x     | 12.4      | 8.1 - 8.4 | Features, Bugfixes, Security Updates |
-| 6.x     | 11.5      | 7.4 - 8.4 | Bugfixes, Security Updates           |
+| 9.x     | 14.3      | 8.2 - 8.5 | Features, Bugfixes, Security Updates |
+| 8.x     | 13.4      | 8.2 - 8.5 | Features, Bugfixes, Security Updates |
+| 7.x     | 12.4      | 8.1 - 8.4 | Bugfixes, Security Updates           |
+| 6.x     | 11.5      | 7.4 - 8.4 | Security Updates                     |
 | 5.x     | 10.4      | 7.2 - 7.4 | Security Updates                     |
 | 4.x     | 8.7 - 9.5 | 7.0 - 7.4 | Support dropped                      |
 | 3.x     | 7.6 - 8.7 | 5.5 - 7.3 | Support dropped                      |
@@ -110,7 +112,7 @@ Please refer to the [contributing](CONTRIBUTING.md) document included in this re
 
 ## Reporting a Vulnerability
 
-Please report vulnerabilities to [security@typo3.org](mailto:security@typo3.org).
+Please report vulnerabilities to [security@typo3.org](mailto:security@typo3.org) only.
 
 ## Screenshot
 

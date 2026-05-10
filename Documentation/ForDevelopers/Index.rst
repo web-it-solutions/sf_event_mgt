@@ -20,3 +20,4 @@ For Developers
    Extending/Index
    Events/Index
    Payment/Index
+   CurrencyUtility/Index
