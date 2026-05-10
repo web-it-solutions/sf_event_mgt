@@ -28,7 +28,7 @@ API
 
 .. php:class:: \DERHANSEN\SfEventMgt\Utility\CurrencyUtility
 
-   .. php:method:: getByIsoCode(string $isoCode): ?array
+   .. php:method:: getByIsoCode(string $isoCode)
 
       Returns the currency data array for the given ISO 4217 alphabetic code (case-insensitive),
       or :php:`null` if the code is not found.
@@ -40,11 +40,11 @@ API
       * :php:`name` — Human-readable currency name (e.g. :php:`'Euro'`)
       * :php:`symbol` — Currency symbol (e.g. :php:`'€'`)
 
-   .. php:method:: getBySymbol(string $symbol): ?array
+   .. php:method:: getBySymbol(string $symbol)
 
       Returns the first currency data array matching the given symbol, or :php:`null` if not found.
 
-   .. php:method:: getAllIsoCodes(): array
+   .. php:method:: getAllIsoCodes()
 
       Returns an array of all available ISO 4217 alphabetic codes.
 

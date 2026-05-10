@@ -101,44 +101,29 @@ to enable the actions in sf_event_mgt
 
 Please also refer to the :php:`PaymentController` in sf_event_mgt to see all available PSR-14 Events.
 
-In this example I create the class :php:`DERHANSEN\SfEventMgtMypaymentmethod\Payment\Mypaymentmethod` and add
-the following method.::
+In this example I create the class :php:`DERHANSEN\SfEventMgtMypaymentmethod\EventListener\MyPaymentRedirectResponse`
+and as following::
 
- /**
-  * Adds required HTML (for redirection) to the given values-array
-  *
-  * @param array $values
-  * @param bool $updateRegistration
-  * @param \DERHANSEN\SfEventMgt\Domain\Model\Registration $registration
-  * @param ActionController $pObj
-  * @return void
-  */
- public function renderRedirectView(&$values, &$updateRegistration, $registration, $pObj)
+ class MyPaymentRedirectResponse
  {
-     $pluginSettings = $this->getPluginSettings();
+     #[AsEventListener('sf-event-mgt-mypaymentmethod/payment-redirect-response')]
+     public function __invoke(ModifyPaymentRedirectResponseEvent $processPaymentInitializeEvent): void
+     {
+         if ($processPaymentInitializeEvent->getRegistration()->getPaymentmethod() !== 'mypaymentmethod') {
+             return;
+         }
 
-     $view = GeneralUtility::makeInstance(StandaloneView::class);
-     $view->setFormat('html');
-     $view->setLayoutRootPaths($pluginSettings['view']['layoutRootPaths']);
-     $view->setPartialRootPaths($pluginSettings['view']['partialRootPaths']);
-     $view->setTemplateRootPaths($pluginSettings['view']['templateRootPaths']);
+         // @todo Initial payment provider and determine redirect URL
+         $redirectUrl = 'https://paymentprovider.tld/foo/bar'
 
-     // @todo - e.g. call payment providers API to initialize payment
-     //
-     // Make sure to multiply the price with the given amount of depending registrations
-     //
-     // Depending on the payment provider you may receive a redirection URL or a token
-     // which can be passed to the standalone view.
-
-     $view->assignMultiple([
-         'settings' => $pluginSettings['settings'],
-     ]);
-     $values['html'] = $view->render();
+         $redirectResponse = new RedirectResponse($redirectUrl, 303);
+         $processPaymentInitializeEvent->setResponse($redirectResponse);
+     }
  }
 
-Replace the @todo section with your own code. The returned view should include some text
-and at least the link for the redirection. In order process automatic redirection, the
-view could include a JavaScript redirect to the payment providers payment page.
+The event listener shows how to use the PSR-14 event :php:`ModifyPaymentRedirectResponseEvent` to
+set a redirect response, which is handled by the extensions internal redirect process and redirects
+the user to the given redirect URL.
 
 5. Implement methods
 --------------------
@@ -165,10 +150,10 @@ using a HMAC, the cHash can manually be removed from generated URLs by implement
 the :php:`ProcessPaymentInitializeEvent` PSR-14 event.
 
 
-7. Security conciderations
+7. Security considerations
 --------------------------
 
-Make sure that your rendered Fluid standlone views do not contain sensitive data or possibilities
+Make sure that rendered Fluid views do not contain sensitive data or possibilities
 for Cross Site Scripting (XSS) (:php:`values['html']` is rendered with :php:`f:format.raw`).
 
 
